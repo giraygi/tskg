@@ -16,6 +16,7 @@ Defaults:
     output_dir : ontologies/
 """
  
+import argparse
 import json
 import shutil
 import sys
@@ -33,15 +34,15 @@ except ImportError:
  
 # ── config ────────────────────────────────────────────────────────────────────
  
-JSON_FILE   = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("xxx.json")
-OUTPUT_DIR  = Path(sys.argv[2]) if len(sys.argv) > 2 else Path("ontologies")
-ONTOLOGY_ACTION_COUNTS  = Path(sys.argv[3]) if len(sys.argv) > 3 else Path("ontology_action_counts.json")
+DEFAULT_JSON_FILE   = Path("ontologies.json")
+DEFAULT_OUTPUT_DIR  = Path("ontologies")
+DEFAULT_ONTOLOGY_ACTION_COUNTS  = Path("ontology_action_counts.json")
  
-CONNECT_TIMEOUT = 30     # seconds to establish the connection
-READ_TIMEOUT    = 60     # seconds of inactivity between chunks
-TOTAL_TIMEOUT   = 600    # hard cap on the entire download (10 min per file)
-RETRIES         = 3
-RETRY_DELAY     = 5      # seconds between retries
+DEFAULT_CONNECT_TIMEOUT = 30     # seconds to establish the connection
+DEFAULT_READ_TIMEOUT    = 60     # seconds of inactivity between chunks
+DEFAULT_TOTAL_TIMEOUT   = 600    # hard cap on the entire download (10 min per file)
+DEFAULT_RETRIES         = 3
+DEFAULT_RETRY_DELAY     = 5      # seconds between retries
 HEADERS     = {
     "User-Agent": (
         "Mozilla/5.0 (X11; Linux x86_64) "
@@ -74,19 +75,27 @@ def get_extension(url: str) -> str:
     return suffix if suffix in KNOWN_EXTS else ".owl"
  
  
-def download_http(url: str, dest: Path) -> bool:
+def download_http(
+    url: str,
+    dest: Path,
+    connect_timeout: int,
+    read_timeout: int,
+    total_timeout: int,
+    retries: int,
+    retry_delay: int,
+) -> bool:
     """Download an HTTP/HTTPS URL to dest. Returns True on success.
 
     Uses streaming so that TOTAL_TIMEOUT is enforced over the entire download,
     not just per-chunk inactivity. Without this a server that trickles data
     one byte at a time would never trigger the read timeout.
     """
-    for attempt in range(1, RETRIES + 1):
+    for attempt in range(1, retries + 1):
         try:
-            deadline = time.monotonic() + TOTAL_TIMEOUT
+            deadline = time.monotonic() + total_timeout
             response = SESSION.get(
                 url,
-                timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+                timeout=(connect_timeout, read_timeout),
                 allow_redirects=True,
                 stream=True,
             )
@@ -95,7 +104,7 @@ def download_http(url: str, dest: Path) -> bool:
                 for chunk in response.iter_content(chunk_size=65536):
                     if time.monotonic() > deadline:
                         raise requests.Timeout(
-                            f"Total download exceeded {TOTAL_TIMEOUT}s"
+                            f"Total download exceeded {total_timeout}s"
                         )
                     if chunk:
                         fh.write(chunk)
@@ -108,9 +117,9 @@ def download_http(url: str, dest: Path) -> bool:
             return True
         except requests.RequestException as e:
             dest.unlink(missing_ok=True)
-            print(f"        ✗ Attempt {attempt}/{RETRIES} failed: {e}")
-            if attempt < RETRIES:
-                time.sleep(RETRY_DELAY)
+            print(f"        ✗ Attempt {attempt}/{retries} failed: {e}")
+            if attempt < retries:
+                time.sleep(retry_delay)
     return False
  
  
@@ -129,17 +138,79 @@ def copy_file(purl: str, dest: Path) -> bool:
 # ── main ──────────────────────────────────────────────────────────────────────
  
 def main():
-    if not JSON_FILE.exists():
-        sys.exit(f"ERROR: JSON file not found: {JSON_FILE}")
+    parser = argparse.ArgumentParser(
+        description="Read xxx.json and download each ontology from its ontology_purl."
+    )
+    parser.add_argument(
+        "--json-file",
+        type=Path,
+        default=DEFAULT_JSON_FILE,
+        help="Input JSON file (default: %(default)s).",
+    )
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=DEFAULT_OUTPUT_DIR,
+        help="Output directory (default: %(default)s).",
+    )
+    parser.add_argument(
+        "--ontology-action-counts",
+        type=Path,
+        default=DEFAULT_ONTOLOGY_ACTION_COUNTS,
+        help="Ontology action counts JSON file (default: %(default)s).",
+    )
+    parser.add_argument(
+        "--connect-timeout",
+        type=int,
+        default=DEFAULT_CONNECT_TIMEOUT,
+        help="Seconds to establish the connection (default: %(default)s).",
+    )
+    parser.add_argument(
+        "--read-timeout",
+        type=int,
+        default=DEFAULT_READ_TIMEOUT,
+        help="Seconds of inactivity between chunks (default: %(default)s).",
+    )
+    parser.add_argument(
+        "--total-timeout",
+        type=int,
+        default=DEFAULT_TOTAL_TIMEOUT,
+        help="Hard cap on the entire download per file in seconds (default: %(default)s).",
+    )
+    parser.add_argument(
+        "--retries",
+        type=int,
+        default=DEFAULT_RETRIES,
+        help="Number of retries for failed downloads (default: %(default)s).",
+    )
+    parser.add_argument(
+        "--retry-delay",
+        type=int,
+        default=DEFAULT_RETRY_DELAY,
+        help="Seconds between retries (default: %(default)s).",
+    )
+    args = parser.parse_args()
+
+    json_file = args.json_file
+    output_dir = args.output_dir
+    ontology_action_counts = args.ontology_action_counts
+    connect_timeout = args.connect_timeout
+    read_timeout = args.read_timeout
+    total_timeout = args.total_timeout
+    retries = args.retries
+    retry_delay = args.retry_delay
+
+    if not json_file.exists():
+        sys.exit(f"ERROR: JSON file not found: {json_file}")
  
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    output_dir.mkdir(parents=True, exist_ok=True)
  
-    with JSON_FILE.open(encoding="utf-8") as f:
+    with json_file.open(encoding="utf-8") as f:
         data = json.load(f)
 
     counted_ontologies = set()
-    if ONTOLOGY_ACTION_COUNTS.exists():
-        with ONTOLOGY_ACTION_COUNTS.open(encoding="utf-8") as oac:
+    if ontology_action_counts.exists():
+        with ontology_action_counts.open(encoding="utf-8") as oac:
             counted_ontologies = set(json.load(oac).keys())
  
     ontologies = data.get("ontologies", [])
@@ -147,8 +218,8 @@ def main():
     if len(counted_ontologies) != 0:
         filtered_ontologies = [item for item in ontologies if item.get("id") in counted_ontologies]
  
-    print(f"Reading : {JSON_FILE}")
-    print(f"Output  : {OUTPUT_DIR}/")
+    print(f"Reading : {json_file}")
+    print(f"Output  : {output_dir}/")
     print(f"Entries : {len(ontologies)}")
     print("─" * 60)
     skipped = set()
@@ -169,7 +240,7 @@ def main():
         ext      = get_extension(purl)
         now = datetime.now()
         date_time = now.strftime("%d-%m-%Y--%H-%M-%S")
-        out_file = OUTPUT_DIR / f"{oid}_{date_time}{ext}"
+        out_file = output_dir / f"{oid}_{date_time}{ext}"
  
         # Resume-safe: skip already downloaded files
         if out_file.exists() and out_file.stat().st_size > 0:
@@ -184,7 +255,15 @@ def main():
         print(f"        File: {out_file}")
  
         if scheme in ("http", "https"):
-            ok = download_http(purl, out_file)
+            ok = download_http(
+                purl,
+                out_file,
+                connect_timeout,
+                read_timeout,
+                total_timeout,
+                retries,
+                retry_delay,
+            )
         elif scheme == "file":
             ok = copy_file(purl, out_file)
         else:

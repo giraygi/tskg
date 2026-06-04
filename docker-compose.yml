@@ -43,7 +43,7 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        JENA_VERSION: "5.6.0"
+        JENA_VERSION: "6.0.0"
         ROBOT_VERSION: "1.9.10"
 
     container_name: ontology-prep
@@ -57,7 +57,9 @@ services:
     environment:
       - ROBOT_JAVA_ARGS=-Xmx8g
       - JAVA_TOOL_OPTIONS=-Dfile.encoding=UTF-8
-
+      - TOKEN=${TOKEN}
+      - MIN_ACTIONS=${MIN_ACTIONS:-5000}
+      - DATE=${DATE:-last30}
     networks:
       - qlever-net
 
@@ -73,7 +75,7 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        JENA_VERSION: "5.6.0"
+        JENA_VERSION: "6.0.0"
         ROBOT_VERSION: "1.9.10"
 
     container_name: qlever

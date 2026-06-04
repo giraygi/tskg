@@ -31,20 +31,28 @@ RE_PATH  = re.compile(r'/ontologies/([A-Za-z0-9_\-]+)', re.IGNORECASE)
 RE_PARAM = re.compile(r'\bontology=([A-Za-z0-9_\-]+)', re.IGNORECASE)
 
 
-def fetch_data() -> list[dict]:
+def fetch_data(
+    matomo_url: str,
+    token_auth: str,
+    id_site: str,
+    id_dim: str,
+    period: str,
+    date: str,
+    filter_limit: str,
+) -> list[dict]:
     """Call the Matomo API and return the parsed JSON list."""
     params = {
         "module":       "API",
         "method":       "CustomDimensions.getCustomDimension",
-        "idDimension":  ID_DIM,
-        "idSite":       ID_SITE,
-        "period":       PERIOD,
-        "date":         DATE,
+        "idDimension":  id_dim,
+        "idSite":       id_site,
+        "period":       period,
+        "date":         date,
         "format":       "json",
-        "filter_limit": FILTER_LIMIT,
-        "token_auth":   TOKEN_AUTH,
+        "filter_limit": filter_limit,
+        "token_auth":   token_auth,
     }
-    response = requests.post(MATOMO_URL, data=params, timeout=60)
+    response = requests.post(matomo_url, data=params, timeout=60)
     response.raise_for_status()
     data = response.json()
 
@@ -103,10 +111,83 @@ def main():
         metavar="N",
         help="Only show ontologies with nb_actions >= N (default: 0, i.e. show all).",
     )
+    parser.add_argument(
+        "--matomo-url",
+        type=str,
+        default=MATOMO_URL,
+        metavar="URL",
+        help="Matomo API URL (default: %(default)s).",
+    )
+    parser.add_argument(
+        "--site-id",
+        type=str,
+        default=ID_SITE,
+        metavar="ID",
+        help="Matomo site ID (default: %(default)s).",
+    )
+    parser.add_argument(
+        "--dimension-id",
+        type=str,
+        default=ID_DIM,
+        metavar="ID",
+        help="Matomo custom dimension ID (default: %(default)s).",
+    )
+    parser.add_argument(
+        "--period",
+        type=str,
+        default=PERIOD,
+        metavar="PERIOD",
+        help="Matomo period value (default: %(default)s).",
+    )
+    parser.add_argument(
+        "--date",
+        type=str,
+        default=DATE,
+        metavar="DATE",
+        help="Matomo date range (default: %(default)s).",
+    )
+    parser.add_argument(
+        "--filter-limit",
+        type=str,
+        default=FILTER_LIMIT,
+        metavar="N",
+        help="Matomo filter_limit value (default: %(default)s).",
+    )
+    parser.add_argument(
+        "--token",
+        type=str,
+        default=TOKEN_AUTH,
+        metavar="TOKEN",
+        help="Matomo API token (default: %(default)s).",
+    )
     args = parser.parse_args()
 
+    matomo_url = args.matomo_url
+    site_id = args.site_id
+    dimension_id = args.dimension_id
+    period = args.period
+    date = args.date
+    filter_limit = args.filter_limit
+    token_auth = args.token
+
+    print(f"Using Matomo URL: {matomo_url}")
+    print(f"Using Matomo site ID: {site_id}")
+    print(f"Using Matomo dimension ID: {dimension_id}")
+    print(f"Using Matomo period: {period}")
+    print(f"Using Matomo date: {date}")
+    print(f"Using Matomo filter_limit: {filter_limit}")
+    print(f"Using Matomo token: {token_auth}\n")
+
     print("Fetching data from Matomo …")
-    records = fetch_data()
+    records = fetch_data(
+        matomo_url,
+        token_auth,
+        site_id,
+        dimension_id,
+        period,
+        date,
+        filter_limit,
+    )
     print(f"  → {len(records)} records received.\n")
 
     counts = aggregate(records)

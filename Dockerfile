@@ -9,7 +9,7 @@
 #   qlever         →  runs entrypoint.sh (index, start SPARQL server)
 #
 # Build args:
-#   JENA_VERSION   Apache Jena release  (default: 5.6.0)
+#   JENA_VERSION   Apache Jena release  (default: 6.0.0)
 #   ROBOT_VERSION  ROBOT jar release    (default: 1.9.10)
 #
 # Files expected in the build context:
@@ -28,7 +28,7 @@ FROM adfreiburg/qlever:latest
 # All installation steps require root.
 USER root
 
-ARG JENA_VERSION=5.6.0
+ARG JENA_VERSION=6.0.0
 ARG ROBOT_VERSION=1.9.10
 
 # -----------------------------------------------------------------------------

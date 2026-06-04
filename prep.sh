@@ -29,7 +29,7 @@ mkdir -p /data/ontologies "$CONVERTED_DIR"
 # ---------------------------------------------------------------------------
 echo "=== [prep 1/4] collecting Matomo ontology stats ==="
 cd /data
-python3 /app/matomo_ontology_stats.py --min-actions 5000
+python3 /app/matomo_ontology_stats.py --min-actions $MIN_ACTIONS --token $TOKEN --date $DATE
 
 # ---------------------------------------------------------------------------
 # Step 2 — Download ontologies
@@ -37,9 +37,9 @@ python3 /app/matomo_ontology_stats.py --min-actions 5000
 echo ""
 echo "=== [prep 2/4] downloading ontologies ==="
 python3 /app/download_ontologies.py \
-    /app/ontologies.json \
-    /data/ontologies \
-    /data/ontology_action_counts.json
+    --json-file /app/ontologies.json \
+    --output-dir /data/ontologies \
+    --ontology-action-counts /data/ontology_action_counts.json
 
 # ---------------------------------------------------------------------------
 # Step 3 & 4 — Convert to Turtle, copy existing .ttl files
