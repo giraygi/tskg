@@ -69,7 +69,7 @@ latest_existing_ttl() {
     local stem="$1"                          # e.g. efo_12-06-2025--10-00-00
     local prefix="${stem%%_*}"               # e.g. efo
     # Sort by modification time descending; take the first hit
-    ls -t "$CONVERTED_DIR"/${prefix}_*.ttl 2>/dev/null | head -1
+    ls -t "$CONVERTED_DIR"/${prefix}_*.ttl 2>/dev/null | head -1 || true
 }
 
 # Helper: convert or copy a file into CONVERTED_DIR, skipping if content
