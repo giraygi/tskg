@@ -19,7 +19,7 @@ for prefix in $prefixes; do
         fi
 
         echo "Single file for prefix '$prefix': $ttl_file → $output (graph: $VERSION_IRI)"
-        riot --output=nq "$ttl_file" \
+        riot --output=nt "$ttl_file" \
             | awk -v g="<$VERSION_IRI>" '{sub(/ \.$/, " " g " ."); print}' > "$output"
         continue
     fi
@@ -37,7 +37,7 @@ for prefix in $prefixes; do
         fi
 
         echo "  $ttl_file → $VERSION_IRI"
-        riot --output=nq "$ttl_file" \
+        riot --output=nt "$ttl_file" \
             | awk -v g="<$VERSION_IRI>" '{sub(/ \.$/, " " g " ."); print}' >> "$output"
     done
 
@@ -57,7 +57,7 @@ for ttl_file in $(ls *.ttl | grep -v '_'); do
     fi
 
     echo "  $ttl_file → $output (graph: $VERSION_IRI)"
-    riot --output=nq "$ttl_file" \
+    riot --output=nt "$ttl_file" \
         | awk -v g="<$VERSION_IRI>" '{sub(/ \.$/, " " g " ."); print}' > "$output"
 done
 
