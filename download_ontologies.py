@@ -157,7 +157,7 @@ def main():
         "--ontology-action-counts",
         type=Path,
         default=DEFAULT_ONTOLOGY_ACTION_COUNTS,
-        help="Ontology action counts JSON file (default: %(default)s). Without this parameter, all ontologies will be downloaded.",
+        help="Ontology action counts JSON file (default: %(default)s). Without using this parameter or by pointing to a file with an empty json object, all ontologies will be downloaded.",
     )
     parser.add_argument(
         "--connect-timeout",
