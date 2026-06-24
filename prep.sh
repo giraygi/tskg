@@ -131,6 +131,7 @@ done
 echo ""
 echo "=== [prep 4/4] merging versions → .nq ==="
 cd "$CONVERTED_DIR"
+rm -f *.nq
 merge_versions.sh
 
 # ---------------------------------------------------------------------------
