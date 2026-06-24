@@ -157,7 +157,7 @@ def main():
         "--ontology-action-counts",
         type=Path,
         default=DEFAULT_ONTOLOGY_ACTION_COUNTS,
-        help="Ontology action counts JSON file (default: %(default)s).",
+        help="Ontology action counts JSON file (default: %(default)s). Without this parameter, all ontologies will be downloaded.",
     )
     parser.add_argument(
         "--connect-timeout",
@@ -212,11 +212,15 @@ def main():
     if ontology_action_counts.exists():
         with ontology_action_counts.open(encoding="utf-8") as oac:
             counted_ontologies = set(json.load(oac).keys())
+    else:
+        counted_ontologies = set()
  
     ontologies = data.get("ontologies", [])
     filtered_ontologies = ontologies
     if len(counted_ontologies) != 0:
         filtered_ontologies = [item for item in ontologies if item.get("id") in counted_ontologies]
+    else: 
+        filtered_ontologies = ontologies
  
     print(f"Reading : {json_file}")
     print(f"Output  : {output_dir}/")
