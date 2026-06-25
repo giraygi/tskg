@@ -11,6 +11,7 @@
 # dataset should have a short DESCRIPTION, ideally with a date.
 [data]
 NAME         = TS
+FORMAT       = nq
 GET_DATA_CMD =
 DESCRIPTION  = 
 
@@ -23,7 +24,6 @@ DESCRIPTION  =
 # loading process.
 [index]
 INPUT_FILES     = *.nq
-INPUT_FORMAT    = nq
 INDEX_PREFIX    = TS
 CAT_INPUT_FILES = cat ${INPUT_FILES}
 SETTINGS_JSON = { "num-triples-per-batch": 1000000, "parser-integer-overflow-behavior": "overflowing-integers-become-doubles" }
